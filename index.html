@@ -36,12 +36,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      margin: 10px auto;
+      margin: 20px auto;
     }
     .card-header {
       width: 100%;
       text-align: center;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: bold;
       margin-bottom: 1px;
     }
@@ -55,8 +55,8 @@
     .big-number {
       font-size: 50px;
       font-weight: bold;
-      min-width: 30px;
-      border: 2px solid black;
+      min-width: 50px;
+      border: 5px solid black;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -66,7 +66,7 @@
       flex: 1;
       display: flex;
       justify-content: space-around;
-      gap: 10px;
+      gap: 15px;
     }
     .info-block {
       flex: 1;
@@ -78,7 +78,7 @@
     }
     .info-title, .info-value {
       border: 4px solid black;
-      padding: 3px;
+      padding: 5px;
       text-align: center;
     }
     .info-title {
@@ -97,6 +97,17 @@
         display: flex !important;
       }
     }
+
+    /* إخفاء العناصر حسب الصلاحية */
+    .admin-only {
+      display: none;
+    }
+    .supervisor .admin-only {
+      display: block;
+    }
+    .admin .admin-only {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -104,8 +115,8 @@
   <!-- شاشة الترحيب -->
   <div class="container screen active" id="welcomeScreen">
     <div class="text-center mt-5">
-      <img src="https://tse3.mm.bing.net/th/id/OIP.sPrVHYsPkKl8YUDQwjfxuAHaEO?rs=1&pid=ImgDetMain&o=7&rm=3text=مسلخ+مع+لحم+خروف+وطبيب+بيطري" alt="صورة ترحيب" class="img-fluid rounded">
-      <h3 class="mt-3">نظام إدارة الفواتير وسجلات المتعاملين </h3>
+      <img src="https://via.placeholder.com/800x300.png?text=مسلخ+مع+لحم+خروف+وطبيب+بيطري" alt="صورة ترحيب" class="img-fluid rounded">
+      <h3 class="mt-3">مرحبًا بكم في نظام إدارة المسالخ</h3>
       <button class="btn btn-primary mt-3" onclick="goToScreen('loginScreen')">ابدأ</button>
     </div>
   </div>
@@ -132,7 +143,7 @@
   <div class="container screen" id="dashboard">
     <h3 class="mt-4 text-center">لوحة التحكم</h3>
     <div class="row g-3 mt-4">
-      <div class="col-md-4">
+      <div class="col-md-4 admin-only">
         <button class="btn btn-primary w-100" onclick="goToScreen('userSettings')">إعدادات المستخدم</button>
       </div>
       <div class="col-md-4">
@@ -152,7 +163,7 @@
   </div>
 
   <!-- شاشة إعدادات المستخدم -->
-  <div class="container screen" id="userSettings">
+  <div class="container screen admin-only" id="userSettings">
     <h4 class="mt-4 text-center">إعدادات المستخدم</h4>
 
     <form id="userForm" class="row g-3" onsubmit="event.preventDefault(); addUser();">
@@ -170,6 +181,7 @@
           <option value="">اختر الصلاحية</option>
           <option value="مدخل بيانات">مدخل بيانات</option>
           <option value="مشرف">مشرف</option>
+          <option value="ادمن">ادمن</option>
         </select>
       </div>
       <div class="col-md-3 d-flex align-items-end">
@@ -456,18 +468,20 @@
     let users = [
       { name: "أحمد", id: "1234", role: "مدخل بيانات" },
       { name: "مصعب محمد", id: "70062", role: "مشرف" },
+      { name: "مدير النظام", id: "1001", role: "ادمن" }
     ];
 
     // أنواع الذبائح والتقطيع
     let animalCuts = [
-      { animal: "خروف", cut: "ثلاجة", price: 25 },
-      { animal: "ماعز", cut: "كامل", price: 15 },
+      { animal: "خروف", cut: "صحن", price: 150 },
+      { animal: "ماعز", cut: "نص", price: 100 },
     ];
 
     // الإدخالات المحفوظة
     let entries = [];
     let currentUser = null;
     let stickerCounter = 1;
+    let currentScreen = "welcomeScreen"; // تتبع الشاشة الحالية
 
     // تحميل البيانات من localStorage عند بداية التشغيل
     function loadFromLocalStorage() {
@@ -475,11 +489,13 @@
       const dataUsers = localStorage.getItem("users");
       const dataAnimalCuts = localStorage.getItem("animalCuts");
       const lastSticker = localStorage.getItem("lastSticker");
+      const lastScreen = localStorage.getItem("currentScreen");
 
       if (dataEntries) entries = JSON.parse(dataEntries);
       if (dataUsers) users = JSON.parse(dataUsers);
       if (dataAnimalCuts) animalCuts = JSON.parse(dataAnimalCuts);
       if (lastSticker) stickerCounter = parseInt(lastSticker) + 1;
+      if (lastScreen) currentScreen = lastScreen;
     }
 
     function saveToLocalStorage() {
@@ -487,19 +503,36 @@
       localStorage.setItem("users", JSON.stringify(users));
       localStorage.setItem("animalCuts", JSON.stringify(animalCuts));
       localStorage.setItem("lastSticker", stickerCounter);
+      localStorage.setItem("currentScreen", currentScreen);
     }
 
+    // استعادة حالة الشاشة عند تحميل الصفحة
     window.addEventListener("DOMContentLoaded", () => {
       loadFromLocalStorage();
       populateEntryDropdowns();
       document.getElementById("entryDate").valueAsDate = new Date();
       document.getElementById("invoiceNumber").value = generateInvoiceNumber();
+      
+      // استعادة الشاشة التي كانت مفتوحة قبل التحديث
+      if (currentScreen && currentScreen !== "welcomeScreen") {
+        goToScreen(currentScreen);
+      }
+    });
+
+    // منع تحديث الصفحة عند الضغط على F5
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'F5') {
+        e.preventDefault();
+        location.reload();
+      }
     });
 
     // --- التنقل بين الشاشات ---
     function goToScreen(screenId) {
       document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
       document.getElementById(screenId).classList.add("active");
+      currentScreen = screenId;
+      saveToLocalStorage();
 
       if (screenId === "entryScreen") {
         populateEntryDropdowns();
@@ -515,6 +548,26 @@
       if (screenId === "invoicesScreen") {
         renderInvoicesTable();
       }
+      
+      // تطبيق الصلاحيات عند تغيير الشاشة
+      applyUserPermissions();
+    }
+
+    // تطبيق صلاحيات المستخدم
+    function applyUserPermissions() {
+      // إزالة جميع classes المتعلقة بالصلاحيات
+      document.body.classList.remove("admin", "supervisor", "data-entry");
+      
+      if (!currentUser) return;
+
+      // إضافة class حسب صلاحية المستخدم
+      if (currentUser.role === "ادمن") {
+        document.body.classList.add("admin");
+      } else if (currentUser.role === "مشرف") {
+        document.body.classList.add("supervisor");
+      } else {
+        document.body.classList.add("data-entry");
+      }
     }
 
     // --- تسجيل الدخول ---
@@ -525,6 +578,9 @@
         currentUser = user;
         goToScreen("dashboard");
         document.getElementById("loginError").style.display = "none";
+        
+        // تطبيق الصلاحيات بعد تسجيل الدخول
+        applyUserPermissions();
       } else {
         document.getElementById("loginError").style.display = "block";
       }
@@ -534,6 +590,7 @@
     function logout() {
       currentUser = null;
       goToScreen("welcomeScreen");
+      document.body.classList.remove("admin", "supervisor", "data-entry");
     }
 
     // --- إدارة المستخدمين ---
@@ -987,8 +1044,8 @@
         <div class="card p-3">
           <h5>ملخص إحصائي</h5>
           <p>عدد الذبائح: ${totalQuantity}</p>
-          <p>إجمالي المبيعات: ${totalAmount.toFixed(2)} درهم</p>
-          <p>متوسط الفاتورة: ${avgPerEntry.toFixed(2)} درهم</p>
+          <p>إجمالي المبيعات: ${totalAmount.toFixed(2)} ريال</p>
+          <p>متوسط الفاتورة: ${avgPerEntry.toFixed(2)} ريال</p>
           
           <h5 class="mt-3">حسب نوع الذبيحة</h5>
           <table class="table table-bordered">
@@ -1007,7 +1064,7 @@
           <tr>
             <td>${animal}</td>
             <td>${byAnimal[animal].quantity}</td>
-            <td>${byAnimal[animal].amount.toFixed(2)} درهم</td>
+            <td>${byAnimal[animal].amount.toFixed(2)} ريال</td>
           </tr>
         `;
       }
